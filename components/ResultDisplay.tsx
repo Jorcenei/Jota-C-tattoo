@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { GeneratedTattoo } from '../types';
 import { Download, Maximize2, Trash2, ZoomIn, X, PenLine, Minus, Plus, Image as ImageIcon, Loader2, AlertCircle } from 'lucide-react';
+import { audioService } from '../services/audioService';
 
 interface ResultDisplayProps {
   tattoos: GeneratedTattoo[];
@@ -29,20 +31,22 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
   const [zoomLevel, setZoomLevel] = useState(1);
 
   const openZoom = (imageUrl: string) => {
+    audioService.playClick();
     setZoomedImage(imageUrl);
     setZoomLevel(1);
   };
 
   const closeZoom = () => {
+    audioService.playClick();
     setZoomedImage(null);
     setZoomLevel(1);
   };
 
   const adjustZoom = (delta: number) => {
-    setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 4)); // Min 0.5x, Max 4x
+    audioService.playClick();
+    setZoomLevel(prev => Math.min(Math.max(prev + delta, 0.5), 4));
   };
 
-  // Loading State - Brightened skeleton for better visibility
   if (isGenerating) {
     return (
       <div className="flex flex-col gap-6 animate-fadeIn">
@@ -52,7 +56,6 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
           </h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-           {/* Skeleton Card 1 */}
            <div className="flex flex-col gap-3">
              <div className="w-full aspect-square bg-zinc-800 rounded-xl border border-zinc-700 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent animate-[shimmer_1.5s_infinite] -translate-x-full" style={{ transform: 'skewX(-20deg)' }} />
@@ -62,7 +65,6 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
              <div className="h-10 bg-zinc-800 rounded-lg animate-pulse"></div>
            </div>
            
-           {/* Skeleton Card 2 (Hidden on mobile if needed, but good to show) */}
            <div className="hidden md:flex flex-col gap-3">
              <div className="w-full aspect-square bg-zinc-800 rounded-xl border border-zinc-700 flex flex-col items-center justify-center relative overflow-hidden shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-zinc-700/50 to-transparent animate-[shimmer_1.5s_infinite] -translate-x-full" style={{ transform: 'skewX(-20deg)' }} />
@@ -74,7 +76,6 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
     );
   }
 
-  // Error State inside Display
   if (error && tattoos.length === 0) {
     return (
       <div className="w-full h-96 md:h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-red-900/50 rounded-2xl bg-red-950/10 text-red-400 p-8 text-center animate-fadeIn">
@@ -88,7 +89,6 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
     );
   }
 
-  // Empty State
   if (tattoos.length === 0) {
     return (
       <div className="w-full h-96 md:h-full min-h-[400px] flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 text-zinc-600">
@@ -101,6 +101,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
   }
 
   const handleDownload = (imageUrl: string, id: string) => {
+    audioService.playClick();
     const link = document.createElement('a');
     link.href = imageUrl;
     link.download = `inkai-design-${id}.png`;
@@ -116,8 +117,11 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
           {title} <span className="text-zinc-500 text-sm font-normal">({tattoos.length})</span>
         </h3>
         <button 
-            onClick={onClear}
-            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-950/30"
+            onClick={() => {
+              audioService.playClick();
+              onClear();
+            }}
+            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-all px-3 py-1.5 rounded-lg hover:bg-red-950/30 active:scale-95"
           >
             <Trash2 className="w-3 h-3" /> Limpar Lista
         </button>
@@ -125,9 +129,9 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
 
       <div className={`grid ${tattoos.length > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'} gap-6`}>
         {tattoos.map((tattoo) => (
-          <div key={tattoo.id} className="flex flex-col gap-3 group/card">
+          <div key={tattoo.id} className="flex flex-col gap-3 group/card animate-fadeIn">
              <div 
-              className="relative group w-full bg-white rounded-xl overflow-hidden shadow-2xl shadow-black/50 aspect-square flex items-center justify-center cursor-zoom-in"
+              className="relative group w-full bg-white rounded-xl overflow-hidden shadow-2xl shadow-black/50 aspect-square flex items-center justify-center cursor-zoom-in transition-all duration-500 hover:shadow-amber-500/10 hover:-translate-y-1"
               onClick={() => openZoom(tattoo.imageUrl)}
             >
               <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]"></div>
@@ -135,16 +139,18 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
               <img 
                 src={tattoo.imageUrl} 
                 alt={tattoo.prompt} 
-                className="max-w-full max-h-full object-contain p-4 transition-transform duration-700 group-hover:scale-105"
+                className="max-w-full max-h-full object-contain p-4 transition-transform duration-700 group-hover:scale-110"
               />
 
-              {/* Hover Actions */}
               <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-end gap-2 pointer-events-none">
-                 
                  {onDeleteTattoo && (
                    <button 
-                    onClick={(e) => { e.stopPropagation(); onDeleteTattoo(tattoo.id); }}
-                    className="p-2 bg-red-900/80 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg pointer-events-auto mr-auto"
+                    onClick={(e) => { 
+                      e.stopPropagation(); 
+                      audioService.playClick();
+                      onDeleteTattoo(tattoo.id); 
+                    }}
+                    className="p-2 bg-red-900/80 text-white rounded-full hover:bg-red-600 transition-all shadow-lg pointer-events-auto mr-auto hover:scale-110 active:scale-90"
                     title="Excluir"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -152,15 +158,22 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
                  )}
 
                  <button 
-                  onClick={(e) => { e.stopPropagation(); onEdit(tattoo); }}
-                  className="p-2 bg-zinc-800 text-white rounded-full hover:bg-zinc-700 transition-colors shadow-lg pointer-events-auto"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    audioService.playClick();
+                    onEdit(tattoo); 
+                  }}
+                  className="p-2 bg-zinc-800 text-white rounded-full hover:bg-zinc-700 transition-all shadow-lg pointer-events-auto hover:scale-110 active:scale-90"
                   title="Editar / Usar como Referência"
                 >
                   <PenLine className="w-4 h-4" />
                 </button>
                  <button 
-                  onClick={(e) => { e.stopPropagation(); handleDownload(tattoo.imageUrl, tattoo.id); }}
-                  className="p-2 bg-white text-black rounded-full hover:bg-amber-400 transition-colors shadow-lg pointer-events-auto"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    handleDownload(tattoo.imageUrl, tattoo.id); 
+                  }}
+                  className="p-2 bg-white text-black rounded-full hover:bg-amber-400 transition-all shadow-lg pointer-events-auto hover:scale-110 active:scale-90"
                   title="Baixar"
                 >
                   <Download className="w-4 h-4" />
@@ -172,44 +185,44 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
               </div>
             </div>
             
-            <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800 flex justify-between items-center text-xs">
+            <div className="bg-zinc-900 rounded-lg p-3 border border-zinc-800 flex justify-between items-center text-xs transition-colors hover:border-zinc-700">
                <span className="text-zinc-400 truncate max-w-[50%]">{tattoo.config.style[0]}...</span>
                <div className="flex gap-2 shrink-0">
-                 {tattoo.config.includeBackground && <span className="px-1.5 py-0.5 bg-zinc-800 rounded text-amber-500 font-bold" title="Fundo Temático">BG</span>}
-                 <span className="text-zinc-500">{tattoo.config.placement}</span>
+                 {tattoo.config.includeBackground && <span className="px-1.5 py-0.5 bg-zinc-800 rounded text-amber-500 font-bold animate-pulse" title="Fundo Temático">BG</span>}
+                 <span className="text-zinc-500 font-medium">{tattoo.config.placement.split('(')[0]}</span>
                </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Enhanced Zoom Modal */}
       {zoomedImage && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm animate-fadeIn overflow-hidden"
           onClick={closeZoom}
         >
-          {/* Controls Bar */}
           <div 
             className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[60] bg-zinc-900/90 border border-zinc-700 rounded-full px-4 py-2 flex items-center gap-4 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <button onClick={() => adjustZoom(-0.25)} className="text-white hover:text-amber-400 p-1"><Minus className="w-4 h-4" /></button>
+            <button onClick={() => adjustZoom(-0.25)} className="text-white hover:text-amber-400 p-1 transition-transform active:scale-75"><Minus className="w-4 h-4" /></button>
             <input 
               type="range" 
               min="0.5" 
               max="4" 
               step="0.1" 
               value={zoomLevel} 
-              onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+              onChange={(e) => {
+                setZoomLevel(parseFloat(e.target.value));
+              }}
               className="w-32 accent-amber-500 cursor-pointer"
             />
-            <button onClick={() => adjustZoom(0.25)} className="text-white hover:text-amber-400 p-1"><Plus className="w-4 h-4" /></button>
+            <button onClick={() => adjustZoom(0.25)} className="text-white hover:text-amber-400 p-1 transition-transform active:scale-75"><Plus className="w-4 h-4" /></button>
             <span className="text-xs text-zinc-400 w-8 text-center">{Math.round(zoomLevel * 100)}%</span>
           </div>
 
           <button 
-            className="absolute top-6 right-6 z-[60] text-white hover:text-amber-400 bg-zinc-900/80 hover:bg-black p-3 rounded-full transition-all border border-zinc-700 shadow-xl cursor-pointer"
+            className="absolute top-6 right-6 z-[60] text-white hover:text-amber-400 bg-zinc-900/80 hover:bg-black p-3 rounded-full transition-all border border-zinc-700 shadow-xl cursor-pointer active:scale-90"
             onClick={(e) => {
                 e.stopPropagation();
                 closeZoom();
@@ -222,17 +235,12 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({
             className="w-full h-full overflow-auto flex p-0 scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:none]"
             onClick={closeZoom}
           >
-            {/* The "Frame" that expands */}
             <div 
                 className="relative m-auto bg-white shadow-2xl overflow-hidden shrink-0 transition-all duration-200 ease-out"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Texture Overlay */}
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-multiply bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')]"></div>
 
-                {/* The Image inside the frame. 
-                    Increased size constraints to 95vh/vw to fill screen better.
-                */}
                 <img 
                   src={zoomedImage} 
                   alt="Full Quality Zoom" 

@@ -1,62 +1,77 @@
 import { GoogleGenAI } from "@google/genai";
-import { TattooConfig, TattooStyle, TattooOrientation } from "../types";
+import { TattooConfig, TattooStyle, TattooOrientation, BodyPlacement } from "../types";
 
 // Helper to construct the professional prompt based on user input
 const constructPrompt = (config: TattooConfig): string => {
-  const stylesList = config.style.join(" misturado com ");
+  const stylesList = config.style.join(" e ");
   const orientationDesc = config.orientation === TattooOrientation.Vertical 
-    ? "formato vertical (portrait), mais alto que largo" 
-    : "formato horizontal (landscape), mais largo que alto";
+    ? "formato vertical (mais alto que largo)" 
+    : "formato horizontal (mais largo que alto)";
   
-  let baseInstruction = "Crie um design de tatuagem profissional de alta qualidade.";
+  const isStencil = config.placement === BodyPlacement.PapelImpressao;
+
+  let baseInstruction = "Crie uma imagem de tatuagem de altíssima qualidade.";
   
   if (config.referenceImages && config.referenceImages.length > 0) {
-    if (config.referenceImages.length === 1) {
-       baseInstruction = "Transforme a imagem de referência fornecida em um design de tatuagem profissional, aplicando as modificações solicitadas e integrando ao estilo escolhido.";
-    } else {
-       baseInstruction = `Combine e integre os elementos das ${config.referenceImages.length} imagens de referência fornecidas em uma composição única e coesa de tatuagem. Não apenas coloque-as lado a lado, funda-as artisticamente.`;
-    }
+    baseInstruction = `Use as ${config.referenceImages.length} imagens de referência fornecidas como base principal. Extraia a essência, formas e o conceito delas e transforme em um novo design de tatuagem coeso seguindo o estilo ${stylesList}.`;
   }
 
-  const backgroundInstruction = config.includeBackground
-    ? "Fundo: Crie um fundo atmosférico, sutil e artístico que complemente o tema da tatuagem (fumaça, geometria leve, manchas de aquarela ou cenário onírico suave). Não use fundo branco simples."
-    : "Fundo: NEUTRO e LIMPO (branco ou levemente texturizado como papel de arte) para focar apenas no design da tatuagem.";
+  // Specific placement and background logic
+  let visualContext = "";
+  let backgroundInstruction = "";
+
+  if (isStencil) {
+    visualContext = `
+      CONTEXTO: DESIGN DIGITAL PLANO (2D FLASH ART).
+      ESTRITAMENTE: NÃO mostre pele humana, NÃO mostre partes do corpo, NÃO simule uma foto. 
+      A imagem deve ser apenas o desenho artístico puro, centralizado, como um arquivo digital pronto para impressão.
+    `;
+    backgroundInstruction = "Fundo: BRANCO PURO ABSOLUTO (#FFFFFF), sem sombras, sem texturas de papel, sem vinhetas.";
+  } else {
+    visualContext = `
+      CONTEXTO: MOCKUP REALISTA NO CORPO.
+      ESTRITAMENTE: A tatuagem DEVE estar aplicada sobre a pele humana real, especificamente no(a) ${config.placement}. 
+      A imagem deve parecer uma fotografia profissional de alta resolução de uma pessoa real com esta tatuagem recém-feita.
+      A composição deve respeitar a anatomia, músculos e curvaturas do(a) ${config.placement}.
+    `;
+    backgroundInstruction = config.includeBackground
+      ? "Ambiente: Mostre o local do corpo em um cenário artístico ou estúdio de tatuagem com iluminação cinematográfica e profundidade de campo (bokeh)."
+      : "Ambiente: Fundo neutro de estúdio, focando inteiramente na parte do corpo e na aplicação da tatuagem.";
+  }
 
   return `
     ${baseInstruction}
-    Estilo Artístico: Uma fusão harmoniosa de ${stylesList}.
-    Assunto/Elementos: ${config.description}.
-    Local do corpo pretendido: ${config.placement} (a arte deve ser projetada para fluir perfeitamente nesta anatomia específica).
-    Orientação da composição: ${orientationDesc}.
     
-    Diretrizes Técnicas:
+    ${visualContext}
+    
+    TEMA/ASSUNTO: ${config.description}
+    ESTILO: ${stylesList}
+    ORIENTAÇÃO: ${orientationDesc}
+    
+    DIRETRIZES TÉCNICAS:
     - ${backgroundInstruction}
-    - Traços nítidos, bem definidos e limpos (sem borrões).
-    - Contraste adequado para tatuagem (preto sólido onde necessário, sombras suaves).
-    - Composição equilibrada e harmoniosa que respeite a curvatura da área ${config.placement}.
-    - Qualidade de estúdio de tatuagem high-end.
-    - Contexto: Obra de arte artística para portfólio de tatuador.
+    - Detalhes nítidos, contraste perfeito.
+    - Pigmentação realista na pele (se não for modo Impressão).
+    - Traços limpos e profissionais.
     
-    Diretrizes de Estilo Específicas:
-    ${config.style.includes(TattooStyle.Fineline) ? '- Elementos Fineline: Use linhas extremamente finas e delicadas.' : ''}
-    ${config.style.includes(TattooStyle.OldSchool) ? '- Elementos Old School: Use linhas grossas (bold lines) e sombreamento clássico.' : ''}
-    ${config.style.includes(TattooStyle.Blackwork) ? '- Elementos Blackwork: Alto contraste, tinta preta sólida, preenchimento pesado.' : ''}
-    ${config.style.includes(TattooStyle.Geometrico) ? '- Elementos Geométricos: Simetria perfeita e formas precisas.' : ''}
-    ${config.style.includes(TattooStyle.Aquarela) ? '- Elementos Aquarela: Manchas de cor suaves e translúcidas, sem contornos rígidos.' : ''}
+    DIRETRIZES DE ESTILO ESPECÍFICAS:
+    ${config.style.includes(TattooStyle.Fineline) ? '- Fineline: Use agulhas finas, traços delicados e precisos.' : ''}
+    ${config.style.includes(TattooStyle.OldSchool) ? '- Old School: Traços grossos (bold lines), paleta de cores clássica e sombras sólidas.' : ''}
+    ${config.style.includes(TattooStyle.Blackwork) ? '- Blackwork: Áreas de preto saturado intenso e alto contraste.' : ''}
+    ${config.style.includes(TattooStyle.Geometrico) ? '- Geométrico: Geometria sagrada, simetria matemática e linhas retas perfeitas.' : ''}
+    ${config.style.includes(TattooStyle.Realismo) ? '- Realismo: Sombreamento fotográfico, texturas realistas e profundidade 3D.' : ''}
+    ${config.style.includes(TattooStyle.Aquarela) ? '- Aquarela: Transições suaves de cores, efeito de tinta fluida e sem bordas rígidas.' : ''}
   `;
 };
 
 // Single generation function
 const generateSingleImage = async (ai: GoogleGenAI, prompt: string, config: TattooConfig): Promise<string> => {
-    // Map orientation to supported aspect ratios
     const aspectRatio = config.orientation === TattooOrientation.Vertical ? "3:4" : "4:3";
 
     const parts: any[] = [{ text: prompt }];
 
-    // Add reference images if exist
     if (config.referenceImages && config.referenceImages.length > 0) {
         for (const imgBase64 of config.referenceImages) {
-             // Strip the data prefix if present
              const base64Data = imgBase64.split(',')[1] || imgBase64;
              const mimeType = imgBase64.substring(imgBase64.indexOf(':') + 1, imgBase64.indexOf(';')) || 'image/png';
              
@@ -100,7 +115,6 @@ const generateSingleImage = async (ai: GoogleGenAI, prompt: string, config: Tatt
       }
     }
     
-    // Check if safety filter was triggered
     if (response.candidates && response.candidates[0]?.finishReason === 'SAFETY') {
         throw new Error("A imagem foi bloqueada pelos filtros de segurança. Tente evitar termos muito explícitos ou simplificar a descrição.");
     }
@@ -114,7 +128,6 @@ export const generateTattooDesign = async (config: TattooConfig): Promise<string
     const prompt = constructPrompt(config);
     const numberOfImages = config.numberOfImages || 1;
 
-    // Create an array of promises based on the number of images requested
     const promises = Array(numberOfImages).fill(null).map(() => generateSingleImage(ai, prompt, config));
 
     const results = await Promise.all(promises);

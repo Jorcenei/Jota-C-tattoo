@@ -18,6 +18,9 @@ export enum TattooStyle {
 }
 
 export enum BodyPlacement {
+  // Especial
+  PapelImpressao = 'Papel / Impressão (Design Puro)',
+
   // Braços
   AntebracoInterno = 'Antebraço (Interno)',
   AntebracoExterno = 'Antebraço (Externo)',
